@@ -9,4 +9,5 @@ setup(name='nose_priority',
 		license='GNU',
 		packages=['nose_priority'],
 		scripts=['bin/prioritize'],
+		include_package_data=True,
 		zip_safe=False)
