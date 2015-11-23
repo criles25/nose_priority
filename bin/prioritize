@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+# Parse arguments
+import argparse
+parser = argparse.ArgumentParser(description='Prioritize nose tests based on past failures.')
+parser.add_argument('-l', '--log', required=True)
+args = vars(parser.parse_args())
+
+# Call prioritize
+import nose_priority
+nose_priority.prioritize(args)
