@@ -1,4 +1,5 @@
 import os
+import json
 
 def prioritize(args):
 
@@ -31,11 +32,39 @@ def prioritize(args):
 		# 	f.close()
 
 	# Add to test history
-	if args['log_mode']:
-		# Add results to test history
-		
-	# Import test history
+	if args['log']:
+		# Add log to test history
+		log = {'date' : '',
+					'tests' : []
+		}
+		with open(args['log'], 'r') as f:
+			date = None
+			for line in f:
+				if 'date' == line.rstrip('\n'):
+					line = next(f)
+					date = line.rstrip('\n')
+					log['date'] = date
+				if " ... " in line:
+					linePieces = line.split(' ')
+					newObject = {}
+					newObject['test'] = linePieces[0]
+					newObject['pass'] = linePieces[2]	
+					log['tests'].append(newObject)
+		data = None
+		with open(os.path.dirname(__file__) + '/data.json', 'r') as f:
+			data = json.load(f)
+		with open(os.path.dirname(__file__) + '/data.json', 'w') as f:
+			data.append(log)
+			json.dump(data, f)
 
+
+			# with open(os.path.dirname(__file__) + '/data.json', 'a') as f2:
+			# 	json.dump(log, f2)
+
+	# Import test history
+	with open(os.path.dirname(__file__) + '/data.json', 'r') as f:
+		data = json.load(f)
+		print data
 	# Set priorities
 	if not args['ignore_new']:
 		# Collect new tests 
