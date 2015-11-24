@@ -1,37 +1,49 @@
 import os
 import json
+import fileinput
+
+def timeSinceLastFailure(searchedTest, hist):
+	# Search history for test
+	time = 1
+	for log in reversed(hist):
+		for test in log['tests']:
+			if test['path'] == searchedTest[0] + searchedTest[1] + searchedTest[2]:
+				if test['result'] != 'ok':
+					return time
+		time += 1
+	return 999999 # simulate infinity with large number
+
+def timeSinceLastExecution(searchedTest, hist):
+	# Search history for test
+	time = 1
+	for log in reversed(hist):
+		for test in log['tests']:
+			if test['path'] == searchedTest[0] + searchedTest[1] + searchedTest[2]:
+				return time
+		time += 1
+	return 999999 # simulate infinity with large number
+
+# Sets priority of a test
+def setPriority(test, filepath, priority):
+	attrExists = False
+	for line in reversed(open(filepath).readlines()):
+		if test + '.priority' in line:
+			attrExists = True
+			break
+		if 'def ' + test in line:
+			break
+	if attrExists:
+		for line in fileinput.input(filepath, inplace=True):
+				if test + '.priority' in line:
+					print test + '.priority=' + str(priority) + ' # prioritize\n',
+				else:
+					print line,
+	else:
+		with open(filepath, 'a') as f:
+				f.write("\n" + test + ".priority = " + str(priority) + " # prioritize")
 
 def prioritize(args):
-
-	
-
-
-		# for test in newTests:
-		# 	f = open(test[0].replace('.','/') + '.py', 'r')
-		# 	contents = f.readlines()
-		# 	f.close()
-		# 	noImp = True
-		# 	i = 0
-		# 	for line in contents:
-		# 		# Check for import statement
-		# 		if "fromnose.plugins.attribimportattr" in line.translate(None, ' '):
-		# 			noImp = False
-		# 		if test[2] in line:
-		# 			break
-		# 		i += 1
-		# 	while 1:
-		# 		if len(contents[i]) == len(contents[i].lstrip()):
-		# 			break
-		# 		i -= 1
-		# 	contents.insert(i-1, "\n@attr(priority='0')")
-		# 	if noImp:
-		# 		contents.insert(0, "\nfrom nose.plugins.attrib import attr")
-		# 	f = open(test[0].replace('.','/') + '.py', 'w')
-		# 	contents = "".join(contents)
-		# 	f.write(contents)
-		# 	f.close()
-
-	# Add to test history
+	# Import log of previous nose execution
 	if args['log']:
 		# Add log to test history
 		log = {'date' : '',
@@ -47,8 +59,8 @@ def prioritize(args):
 				if " ... " in line:
 					linePieces = line.split(' ')
 					newObject = {}
-					newObject['test'] = linePieces[0]
-					newObject['pass'] = linePieces[2].rstrip('\n')	
+					newObject['path'] = linePieces[0]
+					newObject['result'] = linePieces[2].rstrip('\n')	
 					log['tests'].append(newObject)
 		data = None
 		with open(os.path.dirname(__file__) + '/data.json', 'r') as f:
@@ -92,11 +104,16 @@ def prioritize(args):
 				oldTests.append(test)
 
 		# Set old tests to priority={1,2}
-		# TO-DO
-
+		for test in oldTests:
+			if timeSinceLastFailure(test, hist) <= failWindow:
+				setPriority(test[2], test[0].replace(".", "/") + '.py', 1) # assumes filepath ends in '.py' and doesn't contain '.'
+			elif timeSinceLastExecution(test, hist) > execWindow:
+				setPriority(test[2], test[0].replace(".", "/") + '.py', 1) # assumes filepath ends in '.py' and doesn't contain '.'
+			else:
+				setPriority(test[2], test[0].replace(".", "/") + '.py', 2) # assumes filepath ends in '.py' and doesn't contain '.'
 
 		if not args['ignore_new']:
-			# Collect new tests 
+			# Collect new tests/unprioritized tests
 			p = subprocess.Popen(['nosetests', '--collect-only', '-v', '-a', '!priority'], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 			out, out2 = p.communicate()
 			lines = out2.split('\n')
@@ -107,9 +124,8 @@ def prioritize(args):
 					test = testPath.rpartition('.')
 					newTests.append(test)
 
-			# Set new tests to priority=1
+			# Set new/unprioritized tests to priority=1
 			for test in newTests:
-				with open(test[0].replace('.','/') + '.py', 'a') as f:
-					f.write('\n' + test[2] + '.priority = 1 # prioritize')
-
-
+				setPriority(test[2], test[0].replace(".", "/") + '.py', 1) # assumes filepath ends in '.py' and doesn't contain '.'
+				# with open(test[0].replace('.','/') + '.py', 'a') as f:
+				# 	f.write('\n' + test[2] + '.priority = 1 # prioritize')
