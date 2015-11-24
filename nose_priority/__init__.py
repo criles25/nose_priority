@@ -48,7 +48,7 @@ def prioritize(args):
 					linePieces = line.split(' ')
 					newObject = {}
 					newObject['test'] = linePieces[0]
-					newObject['pass'] = linePieces[2]	
+					newObject['pass'] = linePieces[2].rstrip('\n')	
 					log['tests'].append(newObject)
 		data = None
 		with open(os.path.dirname(__file__) + '/data.json', 'r') as f:
@@ -57,30 +57,59 @@ def prioritize(args):
 			data.append(log)
 			json.dump(data, f)
 
-
-			# with open(os.path.dirname(__file__) + '/data.json', 'a') as f2:
-			# 	json.dump(log, f2)
-
-	# Import test history
-	with open(os.path.dirname(__file__) + '/data.json', 'r') as f:
-		data = json.load(f)
-		print data
 	# Set priorities
-	if not args['ignore_new']:
-		# Collect new tests 
+	if not args['no_priority']:
+		# Import test history
+		hist = None
+		with open(os.path.dirname(__file__) + '/data.json', 'r') as f:
+			hist = json.load(f)
+		
+		# Get execution window
+		execWindow = None
+		if args['exec_window']:
+			execWindow = args['exec_window']
+		else:
+			execWindow = 9 # default to 9
+
+		# Get failure window
+		failWindow = None
+		if args['fail_window']:
+			failWindow = args['fail_window']
+		else:
+			failWindow = 5 # default to 5
+
+		# Collect old tests
 		import subprocess
 		import re
-		p = subprocess.Popen(['nosetests', '--collect-only', '-v', '-a', '!priority'], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+		p = subprocess.Popen(['nosetests', '--collect-only', '-v', '-a', 'priority'], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 		out, out2 = p.communicate()
 		lines = out2.split('\n')
-		newTests = []
+		oldTests = []
 		for line in lines:
 			if line[-6:-3] == '...':
 				testPath = line[:-7]
 				test = testPath.rpartition('.')
-				newTests.append(test)
+				oldTests.append(test)
 
-		# Set new tests to priority=1
-		for test in newTests:
-			with open(test[0].replace('.','/') + '.py', 'a') as f:
-				f.write('\n' + test[2] + '.priority = 1 # prioritize')
+		# Set old tests to priority={1,2}
+		# TO-DO
+
+
+		if not args['ignore_new']:
+			# Collect new tests 
+			p = subprocess.Popen(['nosetests', '--collect-only', '-v', '-a', '!priority'], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+			out, out2 = p.communicate()
+			lines = out2.split('\n')
+			newTests = []
+			for line in lines:
+				if line[-6:-3] == '...':
+					testPath = line[:-7]
+					test = testPath.rpartition('.')
+					newTests.append(test)
+
+			# Set new tests to priority=1
+			for test in newTests:
+				with open(test[0].replace('.','/') + '.py', 'a') as f:
+					f.write('\n' + test[2] + '.priority = 1 # prioritize')
+
+
