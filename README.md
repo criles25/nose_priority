@@ -5,7 +5,7 @@ Nose_priority modifies test files by adding/changing the priority attribute of t
 
 Nose_priority is intended to be used in the continuous integration setting (but does not have to be). The expected sequence of tasks when using nose_priority is:
 
-1. Write tests using node.
+1. Write tests using nose.
 2. Run nose_priority with `prioritize`.
 3. Do `nosetests -a priority=1 ; nosetests -a priority=2`.
 4. Feed log of test execution into nose_priority.
@@ -14,20 +14,20 @@ Nose_priority is intended to be used in the continuous integration setting (but 
 Nose_priority currently requires previous execution histories be fed into it. Future updates will add support for automatic storage of previous executions. Once the log of a previous nosetests execution is manually fed, the results of test execution are permanently stored.
 
 Nose_priority is still a prototype, and may eventually be implemented as a plugin for nose.    
+***
 
-
-*to install*
+**to install**
 
 	pip install nose_priority
 
 
-*to run*
+**to run**
 
 	cd project_root
 	prioritize
 
 
-*to feed log*
+**to feed log**
 
 Nose_priority requires the previous execution results of `nosetests` in order to update the priorities. Additionally, nose_priority needs to know the date and time of when the test execution occurred. Thus, the log file must include the lines
 
