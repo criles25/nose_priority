@@ -10,4 +10,5 @@ setup(name='nose_priority',
 		packages=['nose_priority'],
 		scripts=['bin/prioritize'],
 		include_package_data=True,
+		install_requires=['nose'],
 		zip_safe=False)
